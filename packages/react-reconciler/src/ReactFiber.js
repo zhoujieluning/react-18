@@ -1,4 +1,4 @@
-import { HostRoot } from './ReactWordTags'
+import { HostComponent, HostRoot, IndeterminatedComponent } from './ReactWordTags'
 import { NoFlags } from './ReactFiberFlags'
 
 /**
@@ -17,7 +17,7 @@ export function FiberNode(tag, pendingProps, key) {
     this.updateQueue = null
     this.flags = NoFlags // 节点操作标记
     this.subtreeFlags = NoFlags // 子节点操作标记
-    this.alternate = null
+    this.alternate = null // 指向前或者后缓冲区中对应的节点
     this.index = 0
 }
 
@@ -38,4 +38,52 @@ export function createFiber(tag, pendingProps, key) {
  */
 export function createHostRootFiber() {
     return createFiber(HostRoot, null, null)
+}
+
+/**
+ * 创建或者更新后缓冲区fiber树
+ * @param {*} current RootFiber
+ * @param {*} pendingProps 
+ */
+export function createWorkInProgress(current, pendingProps) {
+    // 获取后缓冲区fiber树，如果没有，则创建
+    let workInProgress = current.alternate
+    if(workInProgress === null) {
+        workInProgress = createFiber(current.tag, pendingProps, current.key)
+        workInProgress.stateNode = current.stateNode
+        workInProgress.alternate = current
+    } else {
+        workInProgress.pendingProps = pendingProps
+        workInProgress.flags = NoFlags
+        workInProgress.subtreeFlags = NoFlags
+    }
+    workInProgress.type = current.type
+    workInProgress.child = current.child
+    workInProgress.memoizedProps = current.memoizedProps
+    workInProgress.memoizedState = current.memoizedState
+    workInProgress.updateQueue = current.updateQueue
+    workInProgress.sibling = current.sibling
+    workInProgress.index = current.index
+
+    return workInProgress
+}
+
+export function createFiberFromElement(element) {
+    const { type, key, props: pendingProps } = element
+    return createFiberFromTypeAndProps(type, key, pendingProps)
+}
+
+export function createFiberFromText(content) {
+    return createFiber(HostRoot, content, null)
+}
+
+export function createFiberFromTypeAndProps(type, key, pendingProps) {
+    // 默认设为位置类型的fiber
+    let tag = IndeterminatedComponent
+    if(typeof type === 'string') { // 标签
+        tag = HostComponent
+    }
+    const fiber = createFiber(tag, pendingProps, key)
+    fiber.type = type
+    return fiber
 }

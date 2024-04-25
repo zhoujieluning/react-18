@@ -8,9 +8,8 @@ function ReactDOMRoot(internalRoot) {
 }
 
 ReactDOMRoot.prototype.render = function(children) {
-    const root = this._internalRoot
-    // 将虚拟dom更新到root上
-    updateContainer(children, root)
+    const fiberRoot = this._internalRoot
+    updateContainer(children, fiberRoot)
 }
 
 /**
