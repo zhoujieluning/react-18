@@ -1,29 +1,21 @@
-import { createFiberRoot } from "./ReactFiberRoot";
 import { createUpdate, enqueueUpdate } from './ReactFiberClassUpdateQueue'
 import { scheduleUpdateOnFiber } from './ReactFiberWorkLoop'
 
 /**
- * 创建FiberRoot
- * @param {*} 真实root 
- * @returns 
+ * 页面初始化
+ * @param {VNode} VNodeRoot 根虚拟dom节点
+ * @param {FiberRoot} FiberRoot  
  */
-export function createContainer(containerInfo) {
-    return createFiberRoot(containerInfo)
+export function initialRender(VNodeRoot, FiberRoot) {
+    const RootFiber = FiberRoot.current
+    const update = createUpdate()
+    // 保存根虚拟dom
+    update.payload = { VNodeRoot }
+    // 将update插入RootFiber的更新队列
+    enqueueUpdate(RootFiber, update)
+    // 执行更新
+    scheduleUpdateOnFiber(FiberRoot)
 }
 
-/**
- * 将虚拟dom更新到root上
- * @param {*} element 虚拟dom
- * @param {*} container FiberRoot 
- */
-export function updateContainer(element, container) {
-    // 拿到rootFiber
-    const current = container.current
-    const update = createUpdate()
-    // 将虚拟dom保存
-    update.payload = { element }
-    // 将update插入更新队列，并返回FiberRoot
-    const root = enqueueUpdate(current, update)
-    scheduleUpdateOnFiber(root)
-    console.log(element, root);
-}
+// 疑问： 初始化渲染时候，为什么要给前缓冲区RootFiber添加更新队列？ 
+// 其实就是给RootFiber记录虚拟dom

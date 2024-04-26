@@ -1,23 +1,29 @@
-import { createContainer, updateContainer } from "react-reconciler/src/ReactFiberReconciler"
+import { initialRender } from "react-reconciler/src/ReactFiberReconciler"
+import { createFiberRoot } from "react-reconciler/src/ReactFiberRoot"
 
 /**
- * @param {*} internalRoot FiberRoot
+ * ReactDOMRoot生成器，包含一个FiberRoot的指向，以及一个render函数
  */
-function ReactDOMRoot(internalRoot) {
-    this._internalRoot = internalRoot
-}
-
-ReactDOMRoot.prototype.render = function(children) {
-    const fiberRoot = this._internalRoot
-    updateContainer(children, fiberRoot)
+class ReactDOMRoot {
+    constructor(FiberRoot) {
+        this._internalRoot = FiberRoot
+    }
+    /**
+     * @param {VNode} VNodeRoot 根虚拟dom节点
+     */
+    render(VNodeRoot) {
+        const FiberRoot = this._internalRoot
+        initialRender(VNodeRoot, FiberRoot)
+    }
 }
 
 /**
- * 根据真实root，创建FiberRoot，再将FiberRoot包裹成ReactDOMRoot
- * @param {*} container 真实root
+ * 创建ReactDOMRoot
+ * 在此阶段创建FiberRoot以及RootFiber
+ * @param {*} root dom
  * @returns ReactDOMRoot
  */
-export function createRoot(container) {
-    const root = createContainer(container)
-    return new ReactDOMRoot(root)
+export function createRoot(root) {
+    const FiberRoot = createFiberRoot(root)
+    return new ReactDOMRoot(FiberRoot)
 }

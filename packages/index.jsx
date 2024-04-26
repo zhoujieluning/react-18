@@ -1,5 +1,4 @@
 import { createRoot } from "react-dom/client";
-
 const elem = <div key="key" ref="ref" other="other">asdf</div>
 const root = createRoot(document.getElementById('root'))
 root.render(elem)
@@ -10,6 +9,9 @@ root.render(elem)
  * react18：虚拟dom -> fiber树 -> 真实dom
  */
 
+// const root = <div id="root"></div>
+
+// const VNodeRoot = root下的虚拟doms
 
 // const FiberRoot = {
 //     containerInfo: root,
@@ -37,3 +39,6 @@ root.render(elem)
 //     _internalRoot: FiberRoot,
 //     render: () => {}
 // }
+
+// ReactDOMRoot._internalRoot -> FiberRoot
+// FiberRoot.containerInfo -> root

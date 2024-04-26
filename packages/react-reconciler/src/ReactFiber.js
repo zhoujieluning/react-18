@@ -1,4 +1,4 @@
-import { HostComponent, HostRoot, IndeterminatedComponent } from './ReactWordTags'
+import { HostComponent, HostRoot, HostText, IndeterminatedComponent } from './ReactWordTags'
 import { NoFlags } from './ReactFiberFlags'
 
 /**
@@ -41,29 +41,29 @@ export function createHostRootFiber() {
 }
 
 /**
- * 创建或者更新后缓冲区fiber树
- * @param {*} current RootFiber
+ * 获取或者创建后缓冲区fiber
+ * @param {FiberNode} oldFiber 
  * @param {*} pendingProps 
  */
-export function createWorkInProgress(current, pendingProps) {
+export function createWorkInProgress(oldFiber, pendingProps) {
     // 获取后缓冲区fiber树，如果没有，则创建
-    let workInProgress = current.alternate
+    let workInProgress = oldFiber.alternate
     if(workInProgress === null) {
-        workInProgress = createFiber(current.tag, pendingProps, current.key)
-        workInProgress.stateNode = current.stateNode
-        workInProgress.alternate = current
+        workInProgress = createFiber(oldFiber.tag, pendingProps, oldFiber.key)
+        workInProgress.stateNode = oldFiber.stateNode
+        workInProgress.alternate = oldFiber
     } else {
         workInProgress.pendingProps = pendingProps
         workInProgress.flags = NoFlags
         workInProgress.subtreeFlags = NoFlags
     }
-    workInProgress.type = current.type
-    workInProgress.child = current.child
-    workInProgress.memoizedProps = current.memoizedProps
-    workInProgress.memoizedState = current.memoizedState
-    workInProgress.updateQueue = current.updateQueue
-    workInProgress.sibling = current.sibling
-    workInProgress.index = current.index
+    workInProgress.type = oldFiber.type
+    workInProgress.child = oldFiber.child
+    workInProgress.memoizedProps = oldFiber.memoizedProps
+    workInProgress.memoizedState = oldFiber.memoizedState
+    workInProgress.updateQueue = oldFiber.updateQueue
+    workInProgress.sibling = oldFiber.sibling
+    workInProgress.index = oldFiber.index
 
     return workInProgress
 }
@@ -74,7 +74,7 @@ export function createFiberFromElement(element) {
 }
 
 export function createFiberFromText(content) {
-    return createFiber(HostRoot, content, null)
+    return createFiber(HostText, content, null)
 }
 
 export function createFiberFromTypeAndProps(type, key, pendingProps) {

@@ -4,17 +4,17 @@ import { processUpdateQueue } from './ReactFiberClassUpdateQueue'
 import { shouldSetTextContent } from 'react-dom-bindings/src/client/ReactDOMHostConfig'
 
 /**
- * 
- * @param {*} current 旧fiber
- * @param {*} workInProgress 新fiber
- * @returns 新的子fiber节点
+ * 构建workInProgress的子fiber
+ * @param {FiberNode} oldFiber 旧fiber
+ * @param {FiberNode} workInProgress 新fiber
+ * @returns 第一个子fiber
  */
-export function beginWork(current, workInProgress) {
+export function beginWork(oldFiber, workInProgress) {
     switch(workInProgress.tag) {
         case HostRoot:
-            return updateHostRoot(current, workInProgress)
+            return updateHostRoot(oldFiber, workInProgress)
         case HostComponent:
-            return updateHostComponent(current, workInProgress)
+            return updateHostComponent(oldFiber, workInProgress)
         case HostText:
             return null
         default:
@@ -22,39 +22,48 @@ export function beginWork(current, workInProgress) {
     }
 }
 
-function updateHostRoot(current, workInProgress) {
+/**
+ * 构建workInProgress的子fiber--处理workInProgress为RootFiber的情况
+ * @param {FiberNode} oldFiber 
+ * @param {FiberNode} workInProgress 
+ * @returns {FiberNode} 第一个子fiber
+ */
+function updateHostRoot(oldFiber, workInProgress) {
+    // 递归遍历workInProgress更新队列，将更新合并为一个
     processUpdateQueue(workInProgress)
-    const nextState = workInProgress.memoizedState
-    // workInProgress对应的子虚拟dom
-    const nextChildren = nextState.element
-    reconcileChildren(current, workInProgress, nextChildren)
+    // 拿到合并后的状态
+    const memoizedState = workInProgress.memoizedState
+    // workInProgress对应的子VNodes
+    const childrenVNode = memoizedState.VNodeRoot
+    // 根据子VNodes构建子fiber，并把第一个子fiber挂到workInProgress.child
+    reconcileChildren(oldFiber, workInProgress, childrenVNode)
     return workInProgress.child
 }
 
-function updateHostComponent(current, workInProgress) {
+function updateHostComponent(oldFiber, workInProgress) {
     const { type } = workInProgress
-    const nextProps = workInProgress.pendingProps
-    let nextChildren = nextProps.children
-    const isDirectTextChild = shouldSetTextContent(type, nextProps)
-    if(isDirectTextChild) {
-        nextChildren = null
-    }
-    reconcileChildren(current, workInProgress, nextChildren)
+    // 拿到workInProgress对应的VNode的props
+    const props = workInProgress.pendingProps
+    let childrenVNode = props.children
+    // const isDirectTextChild = shouldSetTextContent(type, nextProps)
+    // if(isDirectTextChild) {
+    //     childrenVNode = null
+    // }
+    reconcileChildren(oldFiber, workInProgress, childrenVNode)
     return workInProgress.child
 }
 
 /**
  * 
- * @param {*} current 旧fiber
- * @param {*} workInProgress 新fiber
- * @param {*} nextChildren 新fiber对应的子虚拟dom
+ * @param {FiberNode} oldFiber 旧fiber
+ * @param {FiberNode} workInProgress 新fiber
+ * @param {VNodes} childrenVNode workInProgress对应的子VNodes
  */
-function reconcileChildren(current, workInProgress, nextChildren) {
-    if(current === null) {
+function reconcileChildren(oldFiber, workInProgress, childrenVNode) {
+    if(oldFiber === null) { // 旧fiber不存在
         // 根据子虚拟dom，给workInProgress创建子fiber
-        workInProgress.child = mountChildFibers(workInProgress, null, nextChildren)
-    } else {
-        workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren)
-
+        workInProgress.child = mountChildFibers(workInProgress, null, childrenVNode)
+    } else { // 旧fiber存在
+        workInProgress.child = reconcileChildFibers(workInProgress, oldFiber.child, childrenVNode)
     }
 }

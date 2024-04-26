@@ -19,12 +19,12 @@ function FiberRootNode(containerInfo) {
  * @returns FiberRoot
  */
 export function createFiberRoot(containerInfo) {
-    const root = new FiberRootNode(containerInfo) // FiberRoot
-    const uninitiallizedFiber = createHostRootFiber() // RootFiber
+    const FiberRoot = new FiberRootNode(containerInfo) 
+    const RootFiber = createHostRootFiber() 
     // 二者相互指向
-    root.current = uninitiallizedFiber
-    uninitiallizedFiber.stateNode = root
-    // 给RootFiber添加更新队列
-    initialUpdateQueue(uninitiallizedFiber)
-    return root
+    FiberRoot.current = RootFiber
+    RootFiber.stateNode = FiberRoot
+    // 给RootFiber初始化更新队列
+    initialUpdateQueue(RootFiber)
+    return FiberRoot
 }
