@@ -52,6 +52,7 @@ export function createWorkInProgress(oldFiber, pendingProps) {
         workInProgress = createFiber(oldFiber.tag, pendingProps, oldFiber.key)
         workInProgress.stateNode = oldFiber.stateNode
         workInProgress.alternate = oldFiber
+        oldFiber.alternate = workInProgress
     } else {
         workInProgress.pendingProps = pendingProps
         workInProgress.flags = NoFlags
