@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "vite",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write --list-different ."
   },
   "keywords": [],
   "author": "",
@@ -13,5 +15,8 @@
   "dependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.2.10"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
   }
 }
