@@ -1,3 +1,1 @@
-export function commitMutationEffectsOnFiber(finishedWork, RootFiber) {
-    
-}
+export function commitMutationEffectsOnFiber(finishedWork, RootFiber) {}

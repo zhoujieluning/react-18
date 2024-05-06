@@ -1,20 +1,20 @@
-import { HostRoot } from "./ReactWordTags"
+import { HostRoot } from './ReactWordTags'
 
 /**
  * 根据sourceFiber向上一直找到FiberRoot
- * @param {*} sourceFiber 
+ * @param {*} sourceFiber
  */
 export function markUpdateLaneFromFiberToRoot(sourceFiber) {
-    let node = sourceFiber
-    let parent = node.return
-    while(parent !== null) {
-        node = parent
-        parent = node.return
-    }
+  let node = sourceFiber
+  let parent = node.return
+  while (parent !== null) {
+    node = parent
+    parent = node.return
+  }
 
-    if(node.tag === HostRoot) {
-        return node.stateNode
-    }
+  if (node.tag === HostRoot) {
+    return node.stateNode
+  }
 
-    return null
+  return null
 }

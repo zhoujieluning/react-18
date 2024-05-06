@@ -1,3 +1,3 @@
 export function scheduleCallback(callback) {
-    requestIdleCallback(callback)
+  requestIdleCallback(callback)
 }

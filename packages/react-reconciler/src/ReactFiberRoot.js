@@ -3,10 +3,10 @@ import { initialUpdateQueue } from './ReactFiberClassUpdateQueue'
 
 /**
  * FiberRoot生成器
- * @param {*} containerInfo 
+ * @param {*} containerInfo
  */
 function FiberRootNode(containerInfo) {
-    this.containerInfo = containerInfo
+  this.containerInfo = containerInfo
 }
 
 /**
@@ -19,12 +19,12 @@ function FiberRootNode(containerInfo) {
  * @returns FiberRoot
  */
 export function createFiberRoot(containerInfo) {
-    const FiberRoot = new FiberRootNode(containerInfo) 
-    const RootFiber = createHostRootFiber() 
-    // 二者相互指向
-    FiberRoot.current = RootFiber
-    RootFiber.stateNode = FiberRoot
-    // 给RootFiber初始化更新队列
-    initialUpdateQueue(RootFiber)
-    return FiberRoot
+  const FiberRoot = new FiberRootNode(containerInfo)
+  const RootFiber = createHostRootFiber()
+  // 二者相互指向
+  FiberRoot.current = RootFiber
+  RootFiber.stateNode = FiberRoot
+  // 给RootFiber初始化更新队列
+  initialUpdateQueue(RootFiber)
+  return FiberRoot
 }

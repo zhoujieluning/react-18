@@ -1,8 +1,11 @@
-import { createRoot } from "react-dom/client";
-const elem = <div key="key" ref="ref" other="other">asdf</div>
+import { createRoot } from 'react-dom/client'
+const elem = (
+  <div key="key" ref="ref" other="other">
+    asdf
+  </div>
+)
 const root = createRoot(document.getElementById('root'))
 root.render(elem)
-
 
 /**
  * 老版本：虚拟dom -> 真实dom
@@ -21,11 +24,11 @@ root.render(elem)
 // const RootFiber = {
 //     tag: tag,
 //     key: key,
-//     type: null, 
-//     stateNode: FiberRoot, 
-//     return: null, 
-//     sibling: null, 
-//     pendingProps: pendingProps, 
+//     type: null,
+//     stateNode: FiberRoot,
+//     return: null,
+//     sibling: null,
+//     pendingProps: pendingProps,
 //     memoizedProps: null,
 //     memoizedState: null,
 //     updateQueue: null,
