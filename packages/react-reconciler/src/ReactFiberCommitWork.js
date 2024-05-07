@@ -1,5 +1,5 @@
 import { Placement } from './ReactFiberFlags'
-import { HostComponent, HostRoot, HostText } from './ReactWordTags'
+import { FunctionComponent, HostComponent, HostRoot, HostText } from './ReactWordTags'
 import { insertBefore, appendChild } from 'react-dom-bindings/src/client/ReactDOMHostConfig'
 
 function recursivelyTraverseMutationEffects(RootFiber, parentFiber) {
@@ -94,6 +94,7 @@ function commitPlacement(finishedWork) {
 
 export function commitMutationEffectsOnFiber(finishedWork, RootFiber) {
   switch (finishedWork.tag) {
+    case FunctionComponent:
     case HostRoot:
     case HostComponent:
     case HostText: {

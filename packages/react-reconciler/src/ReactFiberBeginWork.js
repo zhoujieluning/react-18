@@ -1,7 +1,8 @@
-import { HostComponent, HostRoot, HostText } from './ReactWordTags'
+import { FunctionComponent, HostComponent, HostRoot, HostText, IndeterminatedComponent } from './ReactWordTags'
 import { mountChildFibers, reconcileChildFibers } from './ReactChildFiber'
 import { processUpdateQueue } from './ReactFiberClassUpdateQueue'
 import { shouldSetTextContent } from 'react-dom-bindings/src/client/ReactDOMHostConfig'
+import { renderWithHooks } from 'react-reconciler/src/ReactFiberHooks'
 
 /**
  * 构建workInProgress的子fiber
@@ -11,6 +12,8 @@ import { shouldSetTextContent } from 'react-dom-bindings/src/client/ReactDOMHost
  */
 export function beginWork(oldFiber, workInProgress) {
   switch (workInProgress.tag) {
+    case IndeterminatedComponent:
+      return mountIndeterminatedComponent(oldFiber, workInProgress, workInProgress.type)
     case HostRoot:
       return updateHostRoot(oldFiber, workInProgress)
     case HostComponent:
@@ -20,6 +23,14 @@ export function beginWork(oldFiber, workInProgress) {
     default:
       return null
   }
+}
+
+function mountIndeterminatedComponent(oldFiber, workInProgress, Component) {
+  const props = workInProgress.pendingProps
+  const value = renderWithHooks(oldFiber, workInProgress, Component, props)
+  workInProgress.tag = FunctionComponent
+  reconcileChildren(oldFiber, workInProgress, value)
+  return workInProgress.child
 }
 
 /**
