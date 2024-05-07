@@ -12,6 +12,10 @@ export function appendChild(parent, child) {
   parent.appendChild(child)
 }
 
+export function insertBefore(parent, child, before) {
+  parent.insertBefore(child, before)
+}
+
 export function setPropsForDom(dom, type, props) {
   if (!dom) return
   const { style, className } = props

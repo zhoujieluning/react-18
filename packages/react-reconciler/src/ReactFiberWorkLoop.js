@@ -28,7 +28,7 @@ function performConcurrentWorkOnRoot(FiberRoot) {
   FiberRoot.finishedWork = FiberRoot.current.alternate
   console.log(FiberRoot)
   // 真正挂载
-  // commitRoot(FiberRoot)
+  commitRoot(FiberRoot)
 }
 
 /**
@@ -74,10 +74,12 @@ function workLoopSync() {
 function commitRoot(FiberRoot) {
   const { finishedWork, current: RootFiber } = FiberRoot
   // 子树是否有更新
-  const subtreeHasEffects = (finishedWork.subtreeFlags & MutationMask) != NoFlags
-  const rootHasEffect = (finishedWork.flags & MutationMask) != NoFlags
-  if (subtreeHasEffects || rootHasEffect) {
-    commitMutationEffectsOnFiber(finishedWork, RootFiber)
-  }
+  // const subtreeHasEffects =
+  //   (finishedWork.subtreeFlags & MutationMask) != NoFlags
+  // const rootHasEffect = (finishedWork.flags & MutationMask) != NoFlags
+  // if (subtreeHasEffects || rootHasEffect) {
+  //   commitMutationEffectsOnFiber(finishedWork, RootFiber)
+  // }
+  commitMutationEffectsOnFiber(finishedWork, RootFiber)
   FiberRoot.current = finishedWork
 }
