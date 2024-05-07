@@ -1,6 +1,7 @@
 import { REACT_ELEMENT_TYPE, REACT_TEXT } from 'shared/ReactSymbols'
 import { primitiveTypes } from 'shared/primitiveTypes'
-import { createFiberFromElement, createFiberFromText } from './ReactFiber'
+import { createFiberFromElement, createFiberFromText, createWorkInProgress } from './ReactFiber'
+import { ChildDeletion } from './ReactFiberFlags'
 
 function createChildReconciler(shouldTrackSideEffects) {
   /**
@@ -32,16 +33,70 @@ function createChildReconciler(shouldTrackSideEffects) {
   }
 
   /**
+   * 复用旧fiber
+   * @param {*} fiber
+   * @param {*} pendingProps
+   * @returns
+   */
+  function useFiber(fiber, pendingProps) {
+    const clone = createWorkInProgress(fiber, pendingProps)
+    clone.index = 0
+    clone.sibling = null
+    return clone
+  }
+
+  function deleteChild(parentFiber, childToDelete) {
+    const { deletions } = parentFiber
+    if (deletions === null) {
+      parentFiber.flags |= ChildDeletion
+      parentFiber.deletions = [childToDelete]
+    } else {
+      parentFiber.deletions.push(childToDelete)
+    }
+  }
+
+  function deleteRemainingChildren(parentFiber, child) {
+    let node = child
+    while (node !== null) {
+      deleteChild(parentFiber, child)
+      node = child.sibling
+    }
+  }
+
+  /**
    * 根据单个VNode构建fiber
-   * @param {FiberNode} workInProgress
+   * @param {FiberNode} workInProgress 新的父fiber
    * @param {FiberNode} oldFiberFirstChild
    * @param {VNode} VNode
    * @returns
    */
   function reconcileSingleElement(workInProgress, oldFiberFirstChild, VNode) {
-    // 根据虚拟dom创建fiber
+    const { key, type } = VNode
+    let node = oldFiberFirstChild
+    while (node !== null) {
+      if (node.key === key) {
+        // key和type都相同，复用，并删除其余兄弟节点
+        if (node.type === type) {
+          // 删除其余fiber
+          deleteRemainingChildren(workInProgress, node.sibling)
+          // 复用
+          const existing = useFiber(node, VNode.props)
+          existing.return = workInProgress
+          return existing
+        } else {
+          // key相同，type不同，删除所有节点，并创建新fiber
+          deleteRemainingChildren(workInProgress, node)
+          const created = createFiberFromElement(VNode)
+          created.return = workInProgress
+          return created
+        }
+      } else {
+        // key不同，删除当前节点，并继续遍历兄弟节点
+        deleteChild(workInProgress, node)
+        node = node.sibling
+      }
+    }
     const created = createFiberFromElement(VNode)
-    // 记录父fiber
     created.return = workInProgress
     return created
   }

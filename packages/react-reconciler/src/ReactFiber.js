@@ -19,6 +19,7 @@ export function FiberNode(tag, pendingProps, key) {
   this.subtreeFlags = NoFlags // 子节点操作标记
   this.alternate = null // 指向前或者后缓冲区中对应的节点
   this.index = 0
+  deletions = null // 记录需要删除的子节点
 }
 
 /**
