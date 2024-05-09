@@ -1,7 +1,7 @@
 import { REACT_ELEMENT_TYPE, REACT_TEXT } from 'shared/ReactSymbols'
 import { primitiveTypes } from 'shared/primitiveTypes'
 import { createFiberFromElement, createFiberFromText, createWorkInProgress } from './ReactFiber'
-import { ChildDeletion } from './ReactFiberFlags'
+import { ChildDeletion, Placement } from './ReactFiberFlags'
 
 function createChildReconciler(shouldTrackSideEffects) {
   /**
@@ -117,6 +117,100 @@ function createChildReconciler(shouldTrackSideEffects) {
   }
 
   /**
+   * 根据key相同的虚拟dom和旧fiber生成新fiber，如果二者type相同则复用
+   * @param {*} workInProgress
+   * @param {*} oldChildFiber
+   * @param {*} newChildVNode
+   * @returns
+   */
+  function updateElement(workInProgress, oldChildFiber, newChildVNode) {
+    const { type, props: pendingProps } = newChildVNode
+    // 旧fiber和新虚拟dom的type相同，复用
+    if (oldChildFiber.type === type) {
+      const existing = useFiber(oldChildFiber, pendingProps)
+      existing.return = workInProgress
+      return existing
+    } else {
+      // 不同，新建fiber节点
+      const created = createFiberFromElement(newChildVNode)
+      created.return = workInProgress
+      return created
+    }
+  }
+
+  /**
+   * 新虚拟dom与旧fiber做比较，如果二者key相同
+   * @param {*} workInProgress
+   * @param {*} oldChildFiber
+   * @param {*} newChildVNode
+   * @returns
+   */
+  function updateSlot(workInProgress, oldChildFiber, newChildVNode) {
+    const key = oldChildFiber !== null ? oldChildFiber.key : null
+    if (typeof newChildVNode === 'object') {
+      switch (newChildVNode.$$typeof) {
+        case REACT_ELEMENT_TYPE:
+          return updateElement(workInProgress, oldChildFiber, newChildVNode)
+        default:
+          return null
+      }
+    }
+    return null
+  }
+
+  /**
+   * 第三轮中，拿到剩下的旧fiber的key map
+   * @param {*} workInProgress
+   * @param {*} oldChildFiber
+   * @returns
+   */
+  function mapRemainingChildren(workInProgress, oldChildFiber) {
+    const existingChildrenMap = new Map()
+    let existingChild = oldChildFiber
+    while (existingChild !== null) {
+      if (existingChild.key !== null) {
+        existingChildrenMap.set(existingChild.key, existingChild)
+      } else {
+        existingChildrenMap.set(existingChild.index, existingChild)
+      }
+    }
+    return existingChildrenMap
+  }
+
+  function updateFormMap(existingChildrenMap, workInProgress, newIdx, newChildVNode) {
+    if (typeof newChildVNode === 'object') {
+      switch (newChildVNode.$$typeof) {
+        case REACT_ELEMENT_TYPE:
+          const matchedFiber = existingChildrenMap.get(newChildVNode.key === null ? newIdx : newChildVNode.key) || null
+          return updateElement(workInProgress, matchedFiber, newChildVNode)
+      }
+    }
+  }
+
+  function placeChild(newFiber, lastPlacedIndex, newIdx) {
+    newFiber.index = newIdx
+    if (!shouldTrackSideEffects) {
+      return lastPlacedIndex
+    }
+    const oldFiber = newFiber.alternate
+    // 说明newFiber是复用的
+    if (oldFiber !== null) {
+      const oldIdx = oldFiber.index
+      // 说明在基准线左边，需要移动
+      if (oldIdx < lastPlacedIndex) {
+        newFiber.flags |= Placement
+        return lastPlacedIndex
+      }
+      lastPlacedIndex = oldIdx
+      return lastPlacedIndex
+    } else {
+      // 说明newFiber是新建的
+      newFiber.flags |= Placement
+      return lastPlacedIndex
+    }
+  }
+
+  /**
    * 处理虚拟dom为多个节点
    * @param {FiberNode} workInProgress
    * @param {FiberNode} oldFiberFirstChild
@@ -124,15 +218,72 @@ function createChildReconciler(shouldTrackSideEffects) {
    * @returns {FiberNode} workInProgress的第一个子fiber
    */
   function reconcileChildrenArray(workInProgress, oldFiberFirstChild, childrenVNode) {
-    const childFibers = []
-    let prevFiber = null
-    childrenVNode.forEach((child) => {
-      let fiber = reconcileChildFibers(workInProgress, oldFiberFirstChild, child)
-      prevFiber && (prevFiber.sibling = fiber)
-      prevFiber = fiber
-      childFibers.push(fiber)
-    })
-    return childFibers[0]
+    let prevNewFiber = null
+    let resultingFirstChild = null
+    let newIdx = 0
+    let oldFiber = oldFiberFirstChild
+    let lastPlacedIndex = -1
+    // 第一轮：按序比较，key不同即停止，旧fiber遍历完或者新虚拟dom遍历完也停止；key相同，如果type也相同，复用旧fiber，如果type不同，新建fiber，删除旧fiber。
+    for (; oldFiber !== null && newIdx < childrenVNode.length; newIdx++) {
+      // key不同，跳出第一轮
+      if (oldFiber.key !== childrenVNode[newIdx].key) break
+
+      const newFiber = updateElement(workInProgress, oldFiber, childrenVNode[newIdx])
+      // 说明key相同，type不同，删除旧fiber
+      if (newFiber.alternate === null) {
+        deleteChild(workInProgress, oldFiber)
+      }
+      // 设置基准线
+      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx)
+      if (prevNewFiber === null) {
+        resultingFirstChild = newFiber
+      } else {
+        prevNewFiber.sibling = newFiber
+      }
+      prevNewFiber = newFiber
+      oldFiber = oldFiber.sibling
+    }
+    // 第二轮：此时旧fiber遍历完，新虚拟dom未遍历完，根据剩下的虚拟dom新建fiber
+    if (oldFiber === null) {
+      for (; newIdx < childrenVNode.length; newIdx++) {
+        const newFiber = createChild(workInProgress, childrenVNode[newIdx])
+        if (newFiber === null) continue
+        placeChild(newFiber, newIdx)
+        if (prevNewFiber === null) {
+          resultingFirstChild = newFiber
+        } else {
+          prevNewFiber.sibling = newFiber
+        }
+        prevNewFiber = newFiber
+      }
+    }
+    // 第三轮：旧fiber和新虚拟dom都没遍历完
+    // 剩余的旧fiber节点
+    const existingChildrenMap = mapRemainingChildren(workInProgress, oldFiber)
+    for (; newIdx < childrenVNode.length; newIdx++) {
+      let newFiber = null
+      const matchedFiber = existingChildrenMap.get(newChildVNode.key === null ? newIdx : newChildVNode.key) || null
+      // 不能匹配到key相同的旧fiber，则新建
+      if (matchedFiber === null) {
+        newFiber = createFiberFromElement(newChildVNode)
+        newFiber.return = workInProgress
+      } else {
+        newFiber = updateElement(workInProgress, matchedFiber, newChildVNode)
+      }
+      // key和type都相同，能复用
+      if (newFiber.alternate !== null) {
+        existingChildrenMap.delete(newFiber.key === null ? newIdx : newFiber.key)
+      }
+      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx)
+      if (prevNewFiber === null) {
+        resultingFirstChild = newFiber
+      } else {
+        prevNewFiber.sibling = newFiber
+      }
+      prevNewFiber = newFiber
+    }
+
+    // TODO: 旧fiber未遍历完，新虚拟dom遍历完
   }
   return reconcileChildFibers
 }
